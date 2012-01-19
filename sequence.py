@@ -25,29 +25,31 @@ def parse_fa(fa_file, abund_data=False):
     """
     out_seqs = []
     curr_seq = ""
-    curr_abund = 0
+    curr_abund = 1
+    next_abund = 1
     for line in fa_file:
-        # If this is the title line, then add current seq to out_seqs
-        # and reset curr_seq and curr_abund.
-        if line.startswith('>'):
-            if curr_seq == "": # if this is the very first title line
-                continue
-            seqs += [curr_seq]*curr_abund
-            curr_seq = ""
-            # Sequence abundances should be an integer at the end of
-            # the title line.
-            if len(line.split()) > 1:
+        if line.startswith('>'):  # if a title line
+            if abund_data == True:
+                # get the abundance data if it exists
                 try:
-                    curr_abund = int(line.split()[-1])
+                    next_abund = int(line.split()[-1])
                 except ValueError:
-                    curr_abund = 1                
-        else:
-            # Add the current line of sequence, removing white space
-            # and setting all letters uppercase.
-            curr_seq.join(line.strip().upper())
-    # Add the final sequence and return output
-    if curr_seq != "": # in case the file was empty
-        seqs += [curr_seq]*curr_abund
+                    next_abund = 1
+            else:
+                # if we don't want abundance data, abund always = 1
+                next_abund = 1
+            if curr_seq == "":  # a.k.a. this is the first sequence
+                continue
+            else:  # if not the very first sequence
+                out_seqs += [curr_seq] * curr_abund  # add the seqs
+                curr_abund = next_abund  # update the abundance
+                curr_seq = ""
+        else:  # if a sequence line
+            this_line = line.strip().upper()
+            curr_seq += this_line  # concatenate lines
+    # Now what to do with the last sequence?
+    if curr_seq != "":  # ...if it exists
+        out_seqs += [curr_seq] * curr_abund
     return out_seqs
 
 def sample_from_seqs(n, seqs_list, rand_seed = None):
@@ -77,21 +79,21 @@ def simulate_errors(e, seqs_list, alphabet = DEFAULT_ALPHABET):
     # means that integers should be randomly picked up to 100.
     range_len = int(1.0/e)
     out_seqs = []
-    for true_seq in seqs:
-        observed_seq = ""
+    for true_seq in seqs_list:
+        obs_seq = ""
         for true_nucl in true_seq:
-            observed_nucl = None
+            obs_nucl = None
             # This assertion shouldn't really be necessary
             assert true_nucl in alphabet
             # if the random integer (from 0 to range_len-1) is 0
             if random.randrange(range_len) == 0:
                 obs_nucl = random.choice(alphabet)
                 # The erronious nucleotide should never be the true
-                while obs_nucl == nucl:
+                while obs_nucl == true_nucl:
                     obs_nucl = random.choice(alphabet)
             else:
                 obs_nucl = true_nucl
-            obs_seq.join(obs_nucl)
+            obs_seq += obs_nucl
         out_seqs += [obs_seq]
     return out_seqs
 

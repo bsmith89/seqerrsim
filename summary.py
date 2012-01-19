@@ -4,7 +4,7 @@ import optparse
 def list_seqs(seqs):
     """Returns a sorted list of all sequences in seqs.
 
-    Somewhat computationally intensive, so if you every need
+    Somewhat computationally expensive, so if you'll ever need
     abundance data, you should probably use count(seqs) and cache
     the resulting sequence list with its abundance data.
 
@@ -20,7 +20,6 @@ def calc_diffs_matrix(seqs):
     
     """
     out_matrix = {}
-    seqs = sorted(count(seqs).keys())
     num_done = 0
     for seq1 in seqs:
         seq1_vers = {}
@@ -42,16 +41,19 @@ def nucl_diffs(seq1, seq2):
     assert len(seq1) == len(seq2)
     if seq1 == seq2:
         return 0
-    for char1, char2 in zip(seq1, seq2)
+    for char1, char2 in zip(seq1, seq2):
         if char1 != char2:
             count += 1
     return count
+
+def hamming_dist(seq1, seq2):
+    return nucl_diffs(seq1, seq2)
 
 def abund(seqs):
     """Returns the abundance of each seq in a list of seqs."""
     out_dict = {}
     for seq in seqs:
-        if seq in out:
+        if seq in out_dict:
             out_dict[seq] += 1
         else:
             out_dict[seq] = 1
@@ -86,7 +88,10 @@ def calc_index1(seqs, diffs_matrix = None, abund = None):
     for seq1 in diffs_matrix.keys():
         for seq2 in diffs_matrix[seq1].keys():
             if diffs_matrix[seq1][seq2] == 1:
-                out_dict[seq1] += abund[seq2]
+                try:
+                    out_dict[seq1] += abund[seq2]
+                except KeyError:
+                    out_dict[seq1] = abund[seq2]
     return out_dict
 
 def calc_index2(seqs, diffs_matrix = None, abund = None):
@@ -103,6 +108,22 @@ def calc_index2(seqs, diffs_matrix = None, abund = None):
         for seq2 in diffs_matrix[seq1].keys():
             if diffs_matrix[seq1][seq2] <= 1:
                 out_dict[seq1] += abund[seq2]
+    return out_dict
+
+def calc_index3(seqs, diffs_matrix = None, abund = None):
+    """Calculate the index3 for each seq in seqs.
+
+    Index3 = sum(sequences within dist=n of seq divided by n+1)
+    """
+    if diffs_matrix is None:
+        diffs_matrix = calc_diffs_matrix(seqs)
+    if abund is None:
+        abund = abund(seqs)
+    out_dict = {}
+    for seq1 in diffs_matrix.keys():
+        for seq2 in diffs_matrix[seq1].keys():
+            dist = nucl_diffs(seq1, seq2)
+            out_dict[seq1] += 1.0 / dist + 1
     return out_dict
 
 if __name__ == '__main__':
