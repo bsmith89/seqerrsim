@@ -1,4 +1,8 @@
 *.pyc
+<<<<<<< HEAD
 data/
 .project
 .pydevproject
+=======
+.*
+>>>>>>> 2c38dc5d1d486d4fe7ced9e60fb5776506fec071
