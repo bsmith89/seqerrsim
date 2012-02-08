@@ -2,6 +2,9 @@
 
 """
 import random
+from scipy import array
+from scipy.spatial.distance import hamming
+
 
 DEFAULT_ALPHABET = ['A', 'C', 'G', 'T']
 DEFAULT_ABUND = 1
@@ -17,9 +20,29 @@ class Seq():
     def __init__(self, seq, abund):
         self.str = seq.strip().upper()
         self.abund = float(abund)
-        
+        self.seq = None
+
     def __str__(self):
         return self.str
+
+    def __lt__(self, other):
+        return str(self) < str(other)
+
+    def get_seq_array(self):
+        """Returns a numpy array of self.str."""
+        if self.seq is not None:
+            assert "".join(self.seq) == self.str
+            return self.seq
+        else:
+            self.seq = array(list(self.str))
+            return self.seq
+
+    def dist(self, other):
+        """Returns the hamming distance of self vs. other)"""
+        assert len(self.get_seq_array()) == len(other.get_seq_array())
+        return hamming(self.get_seq_array(),
+                       other.get_seq_array()) *\
+                len(self.str)
     
     def __repr__(self):
         return ("Seq(seq='%s', abund=%f)" % (str(self), float(self)))
@@ -56,7 +79,7 @@ class SeqList():
                     self[seq] = seq
             
     def __iter__(self):
-        return iter(self.dict.values())    
+        return iter(sorted(self.dict.values()))    
     
     def __repr__(self):
         return "SeqList(%s)" % repr(self.dict.values())
@@ -74,6 +97,11 @@ class SeqList():
         """Return the Seq object which has the same sequence as key
         
         """
+        try:
+            if key % 1.0 == 0:
+                return self.dict[sorted(self.dict.keys())[key]]
+        except TypeError:
+            pass
         return self.dict[str(key)]
     
     def __len__(self):
