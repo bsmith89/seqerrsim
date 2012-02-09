@@ -2,11 +2,11 @@
 
 """
 import random
-from data import Seq, SeqList, parse_file, ALPHABET
+from data import Seq, SeqList, ALPHABET, parse_file
 
 def sample(seqs, n):
     sample = SeqList()
-    for pick in range(n):
+    for i in range(n):
         sample += seqs.random_seq()
     return sample
         

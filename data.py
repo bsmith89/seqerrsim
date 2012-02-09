@@ -98,7 +98,10 @@ class SeqList():
         """Return the Seq object which has the same sequence as key
         
         """
-        return self.seq_dict[str(key)]
+        try:
+            return self.seq_dict[self.seq_dict.keys()[key]]
+        except TypeError:
+            return self.seq_dict[str(key)]
     
     def __len__(self):
         return len(self.seq_dict)
@@ -117,6 +120,10 @@ class SeqList():
         else:
             self[seq_object] = seq_object
         return self
+    
+    def index(self, value):
+        assert value in self
+        return self.seq_dict.keys().index(str(value))
     
     def append(self, seq_objects):
         """Add a list of seqs to self."""
