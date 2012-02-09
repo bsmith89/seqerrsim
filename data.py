@@ -2,7 +2,7 @@
 
 """
 import random
-from scipy import array
+from scipy import array, all
 from scipy.spatial.distance import hamming
 
 
@@ -45,7 +45,7 @@ class Seq():
         return ("Seq(seq='%s', abund=%f)" % (str(self), float(self)))
         
     def __eq__(self, other):
-        if scipy.all(self.seq == other.seq):
+        if all(self.seq == other.seq):
             return True
         else:
             return False
