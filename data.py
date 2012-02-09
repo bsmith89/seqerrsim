@@ -17,9 +17,10 @@ class Seq():
     Also defines methods for comparing sequences
     
     """
-    def __init__(self, seq_str, abund):
+    def __init__(self, seq_str, abund, attr = {}):
         self.seq = array(list(seq_str.strip().upper()))
         self.abund = float(abund)
+        self.attr = attr
 
     def __str__(self):
         seq_str = ""
@@ -42,7 +43,7 @@ class Seq():
         return hamming(self.seq, other.seq) * len(self)
     
     def __repr__(self):
-        return ("Seq(seq='%s', abund=%f)" % (str(self), float(self)))
+        return ("Seq(seq='%s', abund=%f, attr=%s)" % (str(self), float(self), str(self.attr)))
         
     def __eq__(self, other):
         if all(self.seq == other.seq):

@@ -20,7 +20,11 @@ def calc_dist_matrix(seq_list):
     return out_matrix
 
 def neighbors(seq, seq_list, dist_matrix, dist = 1):
-    """Returns a SeqList object of all sequences neighboring seq."""
+    """Returns a SeqList object of all sequences neighboring seq.
+    
+    I think this is one of the major bottlenecks D:
+    
+    """
     assert seq in seq_list
     neighbors = SeqList()
     seq_i = seq_list.index(seq)
@@ -42,7 +46,7 @@ def dists_for(seq, seq_list, dist_matrix):
     return dist_matrix[...,seq_list.index(seq)]
 
 
-def use_index(function, seq_list, **kwargs):
+def calc_index(function, seq_list, **kwargs):
     """Returns a list of sequences in seq_list sorted by index value.
     
     """
@@ -54,7 +58,9 @@ def use_index(function, seq_list, **kwargs):
     kwargs = {}
     kwargs['dist_matrix'] = dists
     kwargs['seq_list'] = seq_list
-    for seq in seq_list:
+    for seq in seq_list: # This would be very easily parallelized!
+        index = function(seq, **kwargs)
+        seq.attr['index'] = index
         index_list.append(function(seq, **kwargs))
     return sorted(zip(index_list, seq_list))
 
