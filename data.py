@@ -17,38 +17,35 @@ class Seq():
     Also defines methods for comparing sequences
     
     """
-    def __init__(self, seq, abund):
-        self.str = seq.strip().upper()
+    def __init__(self, seq_str, abund):
+        self.seq = array(list(seq_str.strip().upper()))
         self.abund = float(abund)
-        self.seq = None
 
     def __str__(self):
-        return self.str
+        seq_str = ""
+        for nucl in self.seq:
+            seq_str += str(nucl)
+        return seq_str
+
+    def __iter__(self):
+        return iter(str(self))
+
+    def __len__(self):
+        return len(self.seq)
 
     def __lt__(self, other):
         return str(self) < str(other)
 
-    def get_seq_array(self):
-        """Returns a numpy array of self.str."""
-        if self.seq is not None:
-            assert "".join(self.seq) == self.str
-            return self.seq
-        else:
-            self.seq = array(list(self.str))
-            return self.seq
-
     def dist(self, other):
         """Returns the hamming distance of self vs. other)"""
-        assert len(self.get_seq_array()) == len(other.get_seq_array())
-        return hamming(self.get_seq_array(),
-                       other.get_seq_array()) *\
-                len(self.str)
+        assert len(self) == len(other)
+        return hamming(self.seq, other.seq) * len(self)
     
     def __repr__(self):
         return ("Seq(seq='%s', abund=%f)" % (str(self), float(self)))
         
     def __eq__(self, other):
-        if self.str == str(other):
+        if scipy.all(self.seq == other.seq):
             return True
         else:
             return False
@@ -56,6 +53,9 @@ class Seq():
     def __iadd__(self, value):
         self.abund += float(value)
         return self
+
+    def __add__(self, value):
+        return Seq(str(self), self.abund + float(value))
         
     def __float__(self):
         return float(self.abund)
@@ -69,7 +69,7 @@ class SeqList():
     def __init__(self, seqs = None):
         # the dict attribute is a dictionary with the sequence
         # string as the key and the Seq object as the value.
-        self.dict = {}
+        self.seq_dict = {}
         if seqs is not None:
             for seq in seqs:
                 # add the sequence to the dictionary
@@ -79,16 +79,17 @@ class SeqList():
                     self[seq] = seq
             
     def __iter__(self):
-        return iter(sorted(self.dict.values()))    
+        return iter(self.seq_dict.values())    
     
+    def seq_strs(self):
+        return self.seq_dict.keys()
+
     def __repr__(self):
-        return "SeqList(%s)" % repr(self.dict.values())
+        return "SeqList(%s)" % repr(self.seq_dict.values())
     
     def __contains__(self, seq):
         """Check if the sequence or Seq object are in SeqList."""
-        if str(seq) in self.dict.keys():
-            return True
-        elif seq in self.dict.values():
+        if str(seq) in self.seq_strs():
             return True
         else:
             return False
@@ -97,65 +98,55 @@ class SeqList():
         """Return the Seq object which has the same sequence as key
         
         """
-        try:
-            if key % 1.0 == 0:
-                return self.dict[sorted(self.dict.keys())[key]]
-        except TypeError:
-            pass
-        return self.dict[str(key)]
+        return self.seq_dict[str(key)]
     
     def __len__(self):
-        return len(self.dict.keys())
+        return len(self.seq_dict)
     
     def __setitem__(self, key, value):
         """Add/Replace the item at str(key) with value."""
-        self.dict[str(key)] = value
+        self.seq_dict[str(key)] = value
         return self
         
-    def __iadd__(self, value_or_list):
-        """Add the Seq object to SeqList[str(seq)]"""
-        try:
-            items = list(value_or_list)
-        except TypeError:
-            items = [value_or_list]
-        for item in items:
-            if item in self:
-                self[item] += item
-            else:
-                self[item] = item
+    def __iadd__(self, seq_object):
+        """Add a single Seq object to self."""
+        if seq_object in self:
+            self[seq_object] = Seq(str(seq_object),
+                                   self[seq_object].abund +
+                                       float(seq_object))
+        else:
+            self[seq_object] = seq_object
         return self
     
-    def append(self, seq):
-        """See __iadd__"""
-        self += seq
+    def append(self, seq_objects):
+        """Add a list of seqs to self."""
+        for seq in seq_objects:
+            self += seq
         return self
-        
-    def norm_abunds(self):
-        """Normalize the abundances to a total of 1.0"""
-        abund_total = self.get_abund_total()
-        for seq in self:
-            seq.abund = seq.abund/abund_total
-            
-    def get_abund_total(self):
+
+    def total_abund(self):
         running_total = 0.0
         for seq in self:
             running_total += float(seq)
         return running_total
-            
-#    def dereplicate(self):
-#        """Remove duplicate sequences and combine their abundances.
-#        
-#        """
-#        unique = SeqList()
-#        for seq in self:
-#            if seq in unique:
-#                unique[seq] += seq.abund
-#            else:
-#                unique[seq] = seq
-#        self.dict = unique.dict
         
+    def norm(self):
+        """Return a SeqList with normalized abundances, Total = 1.0"""
+        out_seq_list = SeqList()
+        abund_total = self.total_abund()
+        for seq in self:
+            out_seq_list += Seq(seq_str = str(seq), abund = float(seq) / abund_total)
+        return out_seq_list
+            
     def random_seq(self):
-        abund_total = self.get_abund_total()
+        """Return a random Seq object from self.seq_dict.
+        
+        This algorithm could probably be sped up a good deal but
+        for now I don't need to.  Sampling doesn't seem to be the
+        bottleneck.
+        
+        """
+        abund_total = self.total_abund()
         index = random.random()
         adjusted_index = index * abund_total
         tally = 0.0
@@ -163,8 +154,6 @@ class SeqList():
             tally += float(seq)
             if tally > adjusted_index:
                 return Seq(str(seq), abund = 1)
-                
-
 
 def parse_file(fasta):
     """Takes a open file object and returns a Seqs object.
@@ -177,7 +166,7 @@ def parse_file(fasta):
         if line[0] == ">":
             # add the current sequence to seqs
             if curr_seq is not "":
-                seqs.append(Seq(curr_seq, curr_abund))
+                seqs += Seq(curr_seq, curr_abund)
             # reset curr_*
             curr_seq = ""
             curr_abund = 0.0
@@ -190,5 +179,5 @@ def parse_file(fasta):
         else:
             # append the sequence to curr_seq
             curr_seq += line.strip().upper()
-    seqs.append(Seq(curr_seq, curr_abund))
+    seqs += Seq(curr_seq, curr_abund)
     return seqs
