@@ -16,7 +16,7 @@ def sample_with_errors(seqs, n, error_rate, alph = None):
     sample = SeqList()
     for i in range(n):
         pick = seqs.random_seq()
-        pick_str_with_errors = with_errors(pick.str, error_rate, alph)
+        pick_str_with_errors = with_errors(str(pick), error_rate, alph)
         sample += Seq(pick_str_with_errors, 1.0)
     return sample
         

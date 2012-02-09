@@ -34,7 +34,7 @@ class Seq():
         return len(self.seq)
 
     def __lt__(self, other):
-        return str(self) < str(other)
+        return float(self) < float(other)
 
     def dist(self, other):
         """Returns the hamming distance of self vs. other)"""
