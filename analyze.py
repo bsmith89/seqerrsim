@@ -1,9 +1,15 @@
-"""
+"""TODO: docstring
 
 """
 from scipy import mat, zeros
 from data import SeqList, Seq
 from math import log
+
+def calc_all(index_function, **kwargs):
+    seq_list = kwargs['seq_list']
+    output = SeqList()
+    for seq in seq_list:
+        seq.set_attr(index_function, index_function(seq, **kwargs))
 
 def print_index_tuples(index_tuples):
     for item in index_tuples:

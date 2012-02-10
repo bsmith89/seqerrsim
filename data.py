@@ -22,14 +22,18 @@ class Seq():
         self.abund = float(abund)
         self.attrs = attr
         
-    def __setattr__(self, name, value):
-        self.attrs[name] = value
+    def set_attr(self, attr, value):
+        self.attrs[attr] = value
         
-    def __getattr__(self, name):
-        return self.attrs[name]
+    def get_attr(self, attr):
+        return self.attrs[attr]
     
-    def __delattr__(self, name):
-        del self.attrs[name]
+    def del_attr(self, attr):
+        del self.attrs[attr]
+    
+    def sorted_by(self, attr, reverse = False):
+        #TODO: this
+        pass
 
     def __str__(self):
         seq_str = ""
@@ -99,7 +103,10 @@ class SeqList():
         return self.seq_list
 
     def __repr__(self):
-        return "SeqList(%s)" % repr(self._seq_dict.values())
+        seqs_str = ""
+        for seq in self:
+            seqs_str += "%s\n" % repr(seq)
+        return "SeqList(%s)" % seqs_str
     
     def __contains__(self, seq):
         """Check if the sequence or Seq object are in SeqList."""
