@@ -20,16 +20,22 @@ class Seq():
     def __init__(self, seq_str, abund, attr = {}):
         self.seq = array(list(seq_str.strip().upper()))
         self.abund = float(abund)
-        self.attr = attr
+        self.attrs = attr
+        
+    def __setattr__(self, name, value):
+        self.attrs[name] = value
+        
+    def __getattr__(self, name):
+        return self.attrs[name]
+    
+    def __delattr__(self, name):
+        del self.attrs[name]
 
     def __str__(self):
         seq_str = ""
         for nucl in self.seq:
             seq_str += str(nucl)
         return seq_str
-
-    def __iter__(self):
-        return iter(str(self))
 
     def __len__(self):
         return len(self.seq)
@@ -61,6 +67,7 @@ class Seq():
     def __float__(self):
         return float(self.abund)
 
+
 class SeqList():
     """List of Seq objects.
     
@@ -70,7 +77,8 @@ class SeqList():
     def __init__(self, seqs = None):
         # the dict attribute is a dictionary with the sequence
         # string as the key and the Seq object as the value.
-        self.seq_dict = {}
+        self._seq_dict = {}
+        self._seq_list = []
         if seqs is not None:
             for seq in seqs:
                 # add the sequence to the dictionary
@@ -80,17 +88,22 @@ class SeqList():
                     self[seq] = seq
             
     def __iter__(self):
-        return iter(self.seq_dict.values())    
+        for i in range(len(self)):
+            yield self[i]
+            
+    def __reversed__(self):
+        for i in range(len(self)-1, -1, -1):
+            yield self[i]
     
     def seq_strs(self):
-        return self.seq_dict.keys()
+        return self.seq_list
 
     def __repr__(self):
-        return "SeqList(%s)" % repr(self.seq_dict.values())
+        return "SeqList(%s)" % repr(self._seq_dict.values())
     
     def __contains__(self, seq):
         """Check if the sequence or Seq object are in SeqList."""
-        if str(seq) in self.seq_strs():
+        if str(seq) in self.seq_list:
             return True
         else:
             return False
@@ -100,16 +113,17 @@ class SeqList():
         
         """
         try:
-            return self.seq_dict[self.seq_dict.keys()[key]]
+            return self._seq_dict[self.seq_list[key]]
         except TypeError:
-            return self.seq_dict[str(key)]
+            return self._seq_dict[str(key)]
     
     def __len__(self):
-        return len(self.seq_dict)
+        return len(self._seq_dict)
     
     def __setitem__(self, key, value):
         """Add/Replace the item at str(key) with value."""
-        self.seq_dict[str(key)] = value
+        self._seq_dict[str(key)] = value
+        self._seq_list.append(str(value))
         return self
         
     def __iadd__(self, seq_object):
@@ -124,7 +138,7 @@ class SeqList():
     
     def index(self, value):
         assert value in self
-        return self.seq_dict.keys().index(str(value))
+        return self._seq_list.index(str(value))
     
     def append(self, seq_objects):
         """Add a list of seqs to self."""
@@ -147,7 +161,7 @@ class SeqList():
         return out_seq_list
             
     def random_seq(self):
-        """Return a random Seq object from self.seq_dict.
+        """Return a random Seq object from self.
         
         This algorithm could probably be sped up a good deal but
         for now I don't need to.  Sampling doesn't seem to be the
