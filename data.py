@@ -7,7 +7,7 @@ from scipy.spatial.distance import hamming
 
 
 DEFAULT_ALPHABET = ['A', 'C', 'G', 'T']
-DEFAULT_ABUND = 1
+DEFAULT_ABUND = 1.0
 
 ALPHABET = DEFAULT_ALPHABET
 
@@ -17,32 +17,32 @@ class Seq():
     Also defines methods for comparing sequences
     
     """
-    def __init__(self, seq_str, abund, attr = {}):
-        self.seq = array(list(seq_str.strip().upper()))
-        self.abund = float(abund)
-        self.attrs = attr
-        
+    def __init__(self, seq_str, abund, attrs = None):
+        self._seq = array(list(seq_str.strip().upper()))
+        self._abund = float(abund)
+        if attrs is None:
+            self._attrs = {}
+                    
     def set_attr(self, attr, value):
-        self.attrs[attr] = value
+        self._attrs[attr] = value
         
     def get_attr(self, attr):
-        return self.attrs[attr]
+        return self._attrs[attr]
     
     def del_attr(self, attr):
-        del self.attrs[attr]
-    
-    def sorted_by(self, attr, reverse = False):
-        #TODO: this
-        pass
+        del self._attrs[attr]
+        
+    def get_seq(self):
+        return self._seq
 
     def __str__(self):
         seq_str = ""
-        for nucl in self.seq:
+        for nucl in self._seq:
             seq_str += str(nucl)
         return seq_str
 
     def __len__(self):
-        return len(self.seq)
+        return len(self._seq)
 
     def __lt__(self, other):
         return float(self) < float(other)
@@ -50,26 +50,23 @@ class Seq():
     def dist(self, other):
         """Returns the hamming distance of self vs. other)"""
         assert len(self) == len(other)
-        return hamming(self.seq, other.seq) * len(self)
+        return hamming(self._seq, other._seq) * len(self)
     
     def __repr__(self):
-        return ("Seq(seq='%s', abund=%f, attr=%s)" % (str(self), float(self), str(self.attr)))
+        return ("Seq(seq='%s', abund=%f, attrs=%s)" % (str(self), float(self), str(self._attrs)))
         
     def __eq__(self, other):
-        if all(self.seq == other.seq):
-            return True
-        else:
-            return False
+        return str(self) == str(other)
         
     def __iadd__(self, value):
-        self.abund += float(value)
+        self._abund += float(value)
         return self
 
     def __add__(self, value):
-        return Seq(str(self), self.abund + float(value))
+        return Seq(str(self), self._abund + float(value))
         
     def __float__(self):
-        return float(self.abund)
+        return float(self._abund)
 
 
 class SeqList():
@@ -87,7 +84,7 @@ class SeqList():
             for seq in seqs:
                 # add the sequence to the dictionary
                 if seq in self:
-                    self[seq] += seq.abund
+                    self[seq] += seq._abund
                 else:
                     self[seq] = seq
             
@@ -98,9 +95,25 @@ class SeqList():
     def __reversed__(self):
         for i in range(len(self)-1, -1, -1):
             yield self[i]
+            
+    def sort_by(self, attr, reverse = False):
+        working_seq_list = []
+        working_attr_list = []
+        sorted_seq_list = []
+        for seq in self:
+            working_seq_list += [str(seq)]
+            try:
+                working_attr_list += [seq.get_attr(attr)]
+            except KeyError:
+                working_attr_list += None
+        sorted_zipper = sorted(zip(working_attr_list, working_seq_list))
+        for tup in sorted_zipper:
+            sorted_seq_list += [str(tup[1])]
+        self._seq_list = sorted_seq_list
+        
     
     def seq_strs(self):
-        return self.seq_list
+        return self._seq_list
 
     def __repr__(self):
         seqs_str = ""
@@ -108,9 +121,15 @@ class SeqList():
             seqs_str += "%s\n" % repr(seq)
         return "SeqList(%s)" % seqs_str
     
+    def __str__(self):
+        seqs_str = ""
+        for seq in self:
+            seqs_str += "%s\t%f\n" % (str(seq), float(seq))
+        return "SeqList\n(\n%s)" % seqs_str
+    
     def __contains__(self, seq):
         """Check if the sequence or Seq object are in SeqList."""
-        if str(seq) in self.seq_list:
+        if str(seq) in self._seq_list:
             return True
         else:
             return False
@@ -120,7 +139,7 @@ class SeqList():
         
         """
         try:
-            return self._seq_dict[self.seq_list[key]]
+            return self._seq_dict[self._seq_list[key]]
         except TypeError:
             return self._seq_dict[str(key)]
     
@@ -130,14 +149,15 @@ class SeqList():
     def __setitem__(self, key, value):
         """Add/Replace the item at str(key) with value."""
         self._seq_dict[str(key)] = value
-        self._seq_list.append(str(value))
+        if not value in self._seq_list:
+            self._seq_list.append(str(value))
         return self
         
     def __iadd__(self, seq_object):
         """Add a single Seq object to self."""
         if seq_object in self:
             self[seq_object] = Seq(str(seq_object),
-                                   self[seq_object].abund +
+                                   self[seq_object]._abund +
                                        float(seq_object))
         else:
             self[seq_object] = seq_object
