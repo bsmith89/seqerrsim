@@ -2,8 +2,7 @@
 
 """
 from scipy import mat, zeros, arange, array
-from data import SeqList, Seq
-from math import log
+from data import SeqList
 
 def calc_all(index_function, **kwargs):
     seq_list = kwargs['seq_list']
@@ -58,3 +57,61 @@ def centrality_index(seq, **kwargs):
     for dist in dists:
         some_index += 1.0 / (dist + 1)
     return float(some_index)
+
+def local_maximum(seq, **kwargs):
+    seq_list = kwargs['seq_list']
+    dist_matrix = kwargs['dist_matrix']
+    dist_x_neighbors = get_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 1)
+    for neighbor in dist_x_neighbors:
+        if neighbor > seq:
+            return False
+    return True
+
+def dist_closest_greater(seq, **kwargs):
+    """Returns closest distance of a sequence with higher abundance.
+    
+    TODO: Fix this.  Plus it's *really slow.
+    
+    """
+    seq_list = kwargs['seq_list']
+    dist_matrix = kwargs['dist_matrix']
+    dist = 1
+    while True:
+        dist_x_neighbors = get_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = dist)
+        for neighbor in dist_x_neighbors:
+            if neighbor > seq:
+                return dist
+        dist += 1
+    return None
+
+def adjusted_abundance3(seq, **kwargs):
+    """Abundance of the sequence minus the abundance of 1-neighbors.
+    
+    """
+    seq_list = kwargs['seq_list']
+    dist_matrix = kwargs['dist_matrix']
+    abund_dist_1_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 1)
+    abund_dist_2_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 2)
+    abund_dist_3_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 3)
+    return float(seq) - abund_dist_1_neighbors / 2.0**1 - abund_dist_2_neighbors / 2.0**2 - abund_dist_3_neighbors / 2.0**3
+
+def adjusted_abundance2(seq, **kwargs):
+    """Abundance of the sequence minus the abundance of 1-neighbors.
+    
+    """
+    seq_list = kwargs['seq_list']
+    dist_matrix = kwargs['dist_matrix']
+    abund_dist_1_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 1)
+    abund_dist_2_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 2)
+    return float(seq) - abund_dist_1_neighbors / 2.0**1 - abund_dist_2_neighbors / 2.0**2
+
+def adjusted_abundance1(seq, **kwargs):
+    """Abundance of the sequence minus the abundance of 1-neighbors.
+    
+    """
+    seq_list = kwargs['seq_list']
+    dist_matrix = kwargs['dist_matrix']
+    abund_dist_1_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 1)
+    return float(seq) - abund_dist_1_neighbors / 2.0**1
+               
+    

@@ -10,12 +10,12 @@ def sample(seqs, n):
         sample += seqs.random_seq()
     return sample
         
-def sample_with_errors(seqs, n, error_rate, alph = None):
+def sample_with_errors(seq_list, n, error_rate, alph = None):
     if alph is None:
         alph = ALPHABET
     sample = SeqList()
     for i in range(n):
-        pick = seqs.random_seq()
+        pick = seq_list.random_seq()
         pick_str_with_errors = with_errors(str(pick), error_rate, alph)
         sample += Seq(pick_str_with_errors, 1.0)
     return sample

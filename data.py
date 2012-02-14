@@ -2,7 +2,7 @@
 
 """
 import random
-from scipy import array, all
+from scipy import array
 from scipy.spatial.distance import hamming
 
 
@@ -28,6 +28,9 @@ class Seq():
         
     def get_attr(self, attr):
         return self._attrs[attr]
+    
+    def get_attrs(self):
+        return self._attrs
     
     def del_attr(self, attr):
         del self._attrs[attr]
@@ -86,7 +89,15 @@ class SeqList():
                 if seq in self:
                     self[seq] += seq._abund
                 else:
-                    self[seq] = seq
+                    try:
+                        abund = float(seq)
+                    except TypeError:
+                        abund = DEFAULT_ABUND
+                    try:
+                        attrs = seq.get_attrs()
+                    except TypeError:
+                        attrs = None
+                    self[seq] = Seq(str(seq), abund, attrs)
             
     def __iter__(self):
         for i in range(len(self)):
@@ -102,14 +113,22 @@ class SeqList():
         sorted_seq_list = []
         for seq in self:
             working_seq_list += [str(seq)]
-            try:
-                working_attr_list += [seq.get_attr(attr)]
-            except KeyError:
-                working_attr_list += None
+            if attr == "abund":
+                working_attr_list += [float(seq)]
+            elif attr == "seq":
+                working_attr_list += [str(seq)]
+            else:
+                try:
+                    working_attr_list += [seq.get_attr(attr)]
+                except KeyError:
+                    working_attr_list += None
         sorted_zipper = sorted(zip(working_attr_list, working_seq_list))
         for tup in sorted_zipper:
             sorted_seq_list += [str(tup[1])]
-        self._seq_list = sorted_seq_list
+        if reverse is not True:
+            self._seq_list = sorted_seq_list
+        else:
+            self._seq_list = list(reversed(sorted_seq_list))
         
     
     def seq_strs(self):
