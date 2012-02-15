@@ -133,71 +133,92 @@ class SeqList():
     def __contains__(self, seq):
         if seq in self._seq_list:
             return True
-        return False
-    
-    def __getitem__(self, key_or_index):
-        try:
-            index = self.index(key_or_index)
-        except ValueError:
-            try:
-                assert (index % 1.0 == 0)
-            except AssertionError:
-                raise KeyError("No sequence %s found in this SeqList" % str(key_or_index))
-            finally:
-                index = key_or_index
-        finally:
-            return self._seq_list[index]
-    
-    def __setitem__(self, key_or_index, seq):
-        if self.contains(key_or_index):
-            self._seq_list[self.index(key_or_index)] = seq
-        elif key_or_index % 1.0 == 0.0:
-            self._seq_list[key_or_index] = seq
         else:
-            raise KeyError("No ")
-    
+            return False
+        
     def __len__(self):
         return len(self._seq_list)
+        
+    def index(self, value):
+        if not value in self:
+            raise ValueError("%s is not in the SeqList" % value)
+        else:
+            return self._seq_list.index(value)
     
-    def _add_one_seq(self, seq):
-        pass
+    def __getitem__(self, key_or_index):
+        try: # act like it's a key
+            index = self.seq_list.index(key_or_index)
+            return self._seq_list[index]
+        except ValueError:
+            try: # act like it's an index
+                index = key_or_index
+                return self._seq_list[index]
+            except TypeError: #what?
+                raise KeyError("%s is not in the SeqList" % key_or_index)
     
-    def __iadd__(self, seq_or_seqlist):
-        # Pseudocode:
-        # if seq_or_seqlist is a seqlist:
-        #     for seq in seqlist:
-        #         self._add_one_seq(seq)
-        # else:
-        #     self._add_one_seq(seq)
-        pass
+    def __setitem__(self, key_or_index, value):
+        try: # act like it's a key
+            index = self.seq_list.index(key_or_index)
+            self._seq_list[index] = value
+        except ValueError:
+            try: # act like it's an index
+                index = key_or_index
+                self._seq_list[index] = value
+            except TypeError: #what?
+                key = key_or_index
+                raise KeyError("%s is not in the SeqList" % key)
+        
+    def __delitem__(self, key_or_index):
+        try: # act like it's a key
+            index = self.seq_list.index(key_or_index)
+            del self._seq_list[index]
+        except ValueError:
+            try: # act like it's an index
+                index = key_or_index
+                del self._seq_list[index]
+            except TypeError: #what?
+                key = key_or_index
+                raise KeyError("%s is not in the SeqList" % key)
     
-    def index(self):
-        pass
+    def _add_single(self, seq):
+        if seq in self:
+            self[seq] = Seq(seq, abund = self[seq] + seq.abund)
+        else:
+            self._seq_list.append(seq)
     
-    def append(self, seq_or_seqlist):
-        self += seq_or_seqlist
+    def __iadd__(self, seqlist):
+        for seq in seqlist:
+            self._add_single(seq)
+    
+    def append(self, seqlist):
+        self += seqlist
     
     def abund_total(self):
-        pass
+        abund_total = 0.0
+        for seq in self:
+            abund_total += seq.abund
+        return abund_total
     
     def normalize(self):
-        pass
+        abund_total = self.abund_total()
+        for seq in self:
+            self[seq] = Seq(seq, abund = seq.abund / abund_total)
     
     def random_seq(self):
-        pass
+        abund_total = self.total_abund()
+        index = random.random()
+        adjusted_index = index * abund_total
+        tally = 0.0
+        for seq in self:
+            tally += seq.abund
+            if tally > adjusted_index:
+                return Seq(str(seq), abund = 1)
     
-    def sort_by(self, *args):
+    def sort_by(self, reverse = False, *args):
         pass
     
     def copy(self):
-        pass
-    
-class SeqMatrix():
-    """Encodes all-by-all relationships for a list of sequences.
-    
-    """
-    def __init__(self):
-        pass
+        return SeqList(self)
 
 def parse_file(fasta):
     """Takes a open file object and returns a Seqs object.
