@@ -14,7 +14,7 @@ ALPHABET = DEFAULT_ALPHABET
 class Seq():
     """Sequence and its abundance.
     
-    Also defines methods for comparing sequences
+    Also defines methods for comparing sequences.
     
     """
     def __init__(self, sequence, **kwargs):
@@ -30,13 +30,28 @@ class Seq():
             self.__setattr__(attr, kwargs[attr])
     
     def __iter__(self):
+        """Iterate over the nucleotides in Seq
+        
+        """
         for nucl in self._sequence:
             yield nucl
     
     def __len__(self):
+        """Return the length of Seq
+        
+        """
         return len(self._sequence)
     
     def __eq__(self, other):
+        """Return if other is same sequence as self.
+        
+        Supposed to work on any sequence of nucleotides,
+        whether a Seq object or not.
+        TODO: Test this
+        
+        Does not consider anything except for nucleotide order.
+        
+        """
         try:
             other_seq_array = other.get_seq_array()
         except AttributeError:
@@ -44,17 +59,32 @@ class Seq():
         return all(self.get_seq_array() == other_seq_array)
     
     def get_attrs(self):
+        """Returns a list of all the attributes except the Seq array.
+        
+        """
         attr_dict = dict(self.__dict__)
         del attr_dict['_sequence']
         return attr_dict
             
     def get_seq_array(self):
-        return self._sequence
+        """Returns a copy of the numpy array of Seq's sequence
+        
+        """
+        return sp.array(self._sequence)
     
     def __lt__(self, other):
+        """Return if the sequence is alphabetically less than other
+        
+        """
         return str(self) < str(other)
     
     def __dist__(self, other):
+        """Return the hamming distance between self and other
+        
+        Attempts to have other provide its own numpy array, but able
+        to produce one if necessary.
+        
+        """
         try:
             other_seq_array = other.get_seq_array()
         except AttributeError:
@@ -62,20 +92,57 @@ class Seq():
         return hamming(self.get_seq_array(), other_seq_array)
         
     def __str__(self):
+        """Return a str of sequence
+        
+        """
         return ''.join(self.get_seq_array())
     
+    def fasta(self, name = None):
+        """Return a string in FASTA format of self
+        
+        Also includes all attribute values on self.
+        """
+        title_str = ">"
+        if name is None:
+            try:
+                name = self.name
+            except AttributeError:
+                pass
+        title_str += str(name)
+        attr_list = self.get_attrs()
+        for attr in attr_list:
+            title_str += "|%s=%s" % (str(attr), str(attr_list[attr]))
+        title_str += "\n"
+        return title_str + str(self) + "\n"
+    
     def __repr__(self):
+        """Return a string representation, evaluates identical to self
+        
+        """
         other_attrs = self.get_attrs()
         out_str = "Seq('%s', **%s)" % (str(self), str(other_attrs))
         return out_str
     
     def get_abund(self):
+        """Return the abundance of self
+        
+        Assumes that self.abund has been set, although that is not
+        necessarily the case.  Raises a AttributeError if self.abund
+        has not been set.
+        
+        """
         return self.abund
     
     def set_abund(self, value):
+        """Sets self.abund to value.
+        
+        """
         self.abund = float(value)
         
     def is_seq_object(self):
+        """Allows external functions to make sure a seq is a Seq object
+        
+        """
         return True
 
 
@@ -90,12 +157,21 @@ class SeqList():
         self.append_copy(seq_list)
     
     def __iter__(self):
+        """Iterate over the sequences in SeqList
+        
+        """
         return iter(self._seq_list)
     
     def __reversed__(self):
+        """Iterate over the reversed sequences in SeqList
+        
+        """
         return reversed(self._seq_list)
     
     def __repr__(self):
+        """Return a string representation, evaluates identical to self
+        
+        """
         seqs_str = ""
         for seq in self:
             seqs_str += "%s\n" % repr(seq)
@@ -103,6 +179,14 @@ class SeqList():
         return repr_str
     
     def __str__(self):
+        """Return a tabular view of all seqs in self
+        
+        Returns a tab delimited table of the Seq's in self along with
+        their attributes.
+        
+        TODO: Break this up into smaller processes.
+        
+        """
         header_str = ""
         body_str = ""
         curr_index = 0
@@ -129,66 +213,103 @@ class SeqList():
         return header_str + body_str
                 
     def fasta(self):
+        """Return a string of self which follows FASTA format.
+        
+        """
         fasta_str = ""
         seq_count = 1
         for seq in self:
-            title_line = ">seq%d" % seq_count
-            attrs = seq.get_attrs()
-            seq_str = str(seq)
-            for attr in attrs:
-                title_line += "|%s=%s" % (attr, str(attrs[attr]))
-            fasta_str += "%s\n%s\n" % (title_line, seq_str)
+            name = "seq%d" % seq_count
+            seq_fasta = seq.fasta(name = name)
+            fasta_str += seq_fasta
+            seq_count += 1
         return fasta_str
     
     def __contains__(self, seq):
+        """Return True if sequence seq is found in self
+        
+        Uses Seq.__eq__ which does not consider anything except for
+        the nucleotide sequence in seq.
+        
+        """
         if seq in self._seq_list:
             return True
         else:
             return False
         
     def __len__(self):
+        """Return the number of Seq objects in self
+        
+        """
         return len(self._seq_list)
         
     def __index__(self, value):
+        """Return the index of self which contains value
+        
+        Dependent on the Seq.__eq__() function, which is supposed to
+        consider any two sequences 
+        
+        """
         if not value in self:
             raise ValueError("%s is not in the SeqList" % value)
         else:
             return self._seq_list.index(value)
     
     def __getitem__(self, key_or_index):
+        """Set the item with the provided index or sequence
+        
+        SeqList['AAAA'] <==> SeqList[index_of_AAAA]
+        
+        Evaluates the key_or_index first as a key
+        
+        """
+        
         try: # act like it's a key
             index = self.seq_list.index(key_or_index)
+        except ValueError: # oops, it wasn't a key.
+            pass
+        else:
             return self._seq_list[index]
-        except ValueError:
-            try: # act like it's an index
-                index = key_or_index
-                return self._seq_list[index]
-            except TypeError:
-                raise KeyError("%s is not in the SeqList" % key_or_index)
+        try: # act like it's an index
+            index = key_or_index
+        except TypeError: # doesn't look like a valid index either
+            raise KeyError("%s is not in the SeqList" % key_or_index)
+        else:
+            return self._seq_list[index]
+
     
     def __setitem__(self, key_or_index, value):
+        """Set the item with the provided index or sequence to value
+        
+        If the key provided is different from str(value) the index now
+        points to value, but with a new key (i.e. str(value)).
+        
+        """
         try: # act like it's a key
             index = self.seq_list.index(key_or_index)
+        except ValueError: # oops, look like it wasn't a key
+            pass
+        else:
             self._seq_list[index] = value
-        except ValueError:
-            try: # act like it's an index
-                index = key_or_index
-                self._seq_list[index] = value
-            except TypeError:
-                key = key_or_index
-                raise KeyError("%s is not in the SeqList" % key)
+        try: # act like it's an index
+            self._seq_list[key_or_index] = value
+        except TypeError: # not a valid index either
+            raise KeyError("%s is not in the SeqList" % str(key_or_index))
         
     def __delitem__(self, key_or_index):
+        """Delete the item with provided index or sequence
+        
+        """
         try: # act like it's a key
             index = self.seq_list.index(key_or_index)
+        except ValueError: # oops, look like it wasn't a key
+            pass
+        else:
             del self._seq_list[index]
-        except ValueError:
-            try: # act like it's an index
-                index = key_or_index
-                del self._seq_list[index]
-            except TypeError:
-                key = key_or_index
-                raise KeyError("%s is not in the SeqList" % key)
+        try: # act like it's an index
+            del self[key_or_index]
+        except TypeError: # not a valid index either
+            raise KeyError("%s is not in the SeqList" % str(key_or_index))
     
     def append(self, seq):
         """Add a single Seq object to SeqList
@@ -202,9 +323,7 @@ class SeqList():
         
     def extend(self, seqlist):
         """Add a list of Seq objects to SeqList.
-        
-        TODO: this
-        
+
         """
         for seq in seqlist:
             self.append(seq)
@@ -216,6 +335,9 @@ class SeqList():
         SeqList() += Seq() <==> SeqList().append(Seq())
         SeqList() += SeqList() <==> SeqList().extend(SeqList())
         
+        TODO: test this
+        TODO: write a doc-test
+        
         """
         if seq_or_list.is_seq_object():
             self.append(seq_or_list)
@@ -225,17 +347,26 @@ class SeqList():
         return self
     
     def abund_total(self):
+        """Returns the sum of all sequence abundances
+        
+        """
         abund_total = 0.0
         for seq in self:
             abund_total += seq.abund
         return abund_total
     
     def normalize(self):
+        """Repopulate the SeqList with Seq's with normalized abunds
+        
+        """
         abund_total = self.abund_total()
         for seq in self:
             self[seq] = Seq(seq, abund = seq.abund / abund_total)
     
     def random_seq(self):
+        """Return a random Seq object from SeqList
+        
+        """
         abund_total = self.total_abund()
         index = random.random()
         adjusted_index = index * abund_total
@@ -245,7 +376,7 @@ class SeqList():
             if tally > adjusted_index:
                 return Seq(str(seq), abund = 1)
     
-    def sort_by(self, reverse = [False], *args):
+    def sort_by(self, reverse = [False], *attrs):
         """Sorts the SeqList by the arguments in *args.
         
         Forward or reverse is listed in reverse as booleans
@@ -254,25 +385,37 @@ class SeqList():
         TODO: implement
         
         """
-        pass
+        for attr, if_reverse in reversed(zip(attrs, reverse)):
+            self._sort_by_one_attr(attr, reverse = if_reverse)
     
-    def _sort_by_one_attr(self, reverse = False, attr):
+    def _sort_by_one_attr(self, attr, reverse = False):
         """Hidden method for a single attribute sort    
         
         """
-        pass
-    
+        sorted_zip = sorted(self._attr_zip(attr), reverse = reverse)
+        new_seq_list = []
+        for item in sorted_zip:
+            new_seq_list.append(item[-1])
+        self._seq_list = new_seq_list
+            
     def _attr_zip(self, attr):
+        """Return a list of tuples, [(attr_value, seq_object),...].
+        
+        """
         attr_zip = []
         for seq in self:
-            attr_zip.append(seq.__getattr__[attr], )
+            attr_zip.append((seq.__getattr__[attr], seq))
+        return attr_zip
         
     
     def copy(self):
+        """Return a copy of self.
+        
+        """
         return SeqList(self)
 
 def parse_file(fasta):
-    """Takes a open file object and returns a Seqs object.
+    """Takes a open file object and returns a SeqList object.
     
     """
     pass
