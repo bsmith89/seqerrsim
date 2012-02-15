@@ -19,6 +19,13 @@ class Seq():
     """
     def __init__(self, sequence, **kwargs):
         self._sequence = sp.array(list(sequence))
+        try: # see if sequence already has attributes
+            seq_attrs = sequence.get_attrs
+        except AttributeError: # if not, move on.
+            pass
+        else:
+            for attr in seq_attrs:
+                self.__setattr__(attr, seq_attrs[attr])
         for attr in kwargs.keys():
             self.__setattr__(attr, kwargs[attr])
     
@@ -67,6 +74,9 @@ class Seq():
     
     def set_abund(self, value):
         self.abund = float(value)
+        
+    def is_seq_object(self):
+        return True
 
 
 class SeqList():
@@ -77,7 +87,7 @@ class SeqList():
     """
     def __init__(self, seq_list = []):
         self._seq_list = []
-        self.append(seq_list)
+        self.append_copy(seq_list)
     
     def __iter__(self):
         return iter(self._seq_list)
@@ -139,7 +149,7 @@ class SeqList():
     def __len__(self):
         return len(self._seq_list)
         
-    def index(self, value):
+    def __index__(self, value):
         if not value in self:
             raise ValueError("%s is not in the SeqList" % value)
         else:
@@ -153,7 +163,7 @@ class SeqList():
             try: # act like it's an index
                 index = key_or_index
                 return self._seq_list[index]
-            except TypeError: #what?
+            except TypeError:
                 raise KeyError("%s is not in the SeqList" % key_or_index)
     
     def __setitem__(self, key_or_index, value):
@@ -164,7 +174,7 @@ class SeqList():
             try: # act like it's an index
                 index = key_or_index
                 self._seq_list[index] = value
-            except TypeError: #what?
+            except TypeError:
                 key = key_or_index
                 raise KeyError("%s is not in the SeqList" % key)
         
@@ -176,22 +186,43 @@ class SeqList():
             try: # act like it's an index
                 index = key_or_index
                 del self._seq_list[index]
-            except TypeError: #what?
+            except TypeError:
                 key = key_or_index
                 raise KeyError("%s is not in the SeqList" % key)
     
-    def _add_single(self, seq):
+    def append(self, seq):
+        """Add a single Seq object to SeqList
+        
+        """
         if seq in self:
             self[seq] = Seq(seq, abund = self[seq] + seq.abund)
         else:
             self._seq_list.append(seq)
-    
-    def __iadd__(self, seqlist):
+        return self
+        
+    def extend(self, seqlist):
+        """Add a list of Seq objects to SeqList.
+        
+        TODO: this
+        
+        """
         for seq in seqlist:
-            self._add_single(seq)
-    
-    def append(self, seqlist):
-        self += seqlist
+            self.append(seq)
+        return self
+            
+    def __iadd__(self, seq_or_list):
+        """Append the Seq object(s) to the SeqList.
+        
+        SeqList() += Seq() <==> SeqList().append(Seq())
+        SeqList() += SeqList() <==> SeqList().extend(SeqList())
+        
+        """
+        if seq_or_list.is_seq_object():
+            self.append(seq_or_list)
+        else:
+            for seq in seq_or_list:
+                self.append(seq)
+        return self
     
     def abund_total(self):
         abund_total = 0.0
@@ -214,8 +245,28 @@ class SeqList():
             if tally > adjusted_index:
                 return Seq(str(seq), abund = 1)
     
-    def sort_by(self, reverse = False, *args):
+    def sort_by(self, reverse = [False], *args):
+        """Sorts the SeqList by the arguments in *args.
+        
+        Forward or reverse is listed in reverse as booleans
+        reverse[i] == True: args[i] should be sorted in reverse.
+        
+        TODO: implement
+        
+        """
         pass
+    
+    def _sort_by_one_attr(self, reverse = False, attr):
+        """Hidden method for a single attribute sort    
+        
+        """
+        pass
+    
+    def _attr_zip(self, attr):
+        attr_zip = []
+        for seq in self:
+            attr_zip.append(seq.__getattr__[attr], )
+        
     
     def copy(self):
         return SeqList(self)
