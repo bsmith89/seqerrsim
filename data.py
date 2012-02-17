@@ -20,7 +20,7 @@ class Seq(object):
     def __init__(self, sequence, **kwargs):
         self._sequence = sp.array(list(sequence))
         try: # see if sequence already has attributes
-            seq_attrs = sequence.get_attrs
+            seq_attrs = sequence.get_attrs()
         except AttributeError: # if not, move on.
             pass
         else:
@@ -52,6 +52,10 @@ class Seq(object):
         Does not consider anything except for nucleotide order.
         
         """
+        try:
+            assert len(self) == len(other)
+        except (AssertionError, TypeError):
+            return False
         try:
             other_seq_array = other.get_seq_array()
         except AttributeError:
@@ -154,7 +158,7 @@ class SeqList(object):
     """
     def __init__(self, seq_list = []):
         self._seq_list = []
-        self.append_copy(seq_list)
+        self.extend_with_copy(seq_list)
     
     def __iter__(self):
         """Iterate over the sequences in SeqList
@@ -219,7 +223,10 @@ class SeqList(object):
         fasta_str = ""
         seq_count = 1
         for seq in self:
-            name = "seq%d" % seq_count
+            try:
+                name = seq.ident
+            except AttributeError:
+                name = "seq%d" % seq_count
             seq_fasta = seq.fasta(name = name)
             fasta_str += seq_fasta
             seq_count += 1
@@ -266,18 +273,16 @@ class SeqList(object):
         """
         
         try: # act like it's a key
-            index = self.seq_list.index(key_or_index)
+            index = self._seq_list.index(key_or_index)
         except ValueError: # oops, it wasn't a key.
             pass
         else:
             return self._seq_list[index]
         try: # act like it's an index
             index = key_or_index
+            return self._seq_list[index]
         except TypeError: # doesn't look like a valid index either
             raise KeyError("%s is not in the SeqList" % key_or_index)
-        else:
-            return self._seq_list[index]
-
     
     def __setitem__(self, key_or_index, value):
         """Set the item with the provided index or sequence to value
@@ -289,14 +294,17 @@ class SeqList(object):
         
         """
         try: # act like it's a key
-            index = self.seq_list.index(key_or_index)
+            index = self._seq_list.index(key_or_index)
         except ValueError: # oops, look like it wasn't a key
             pass
         else:
             self._seq_list[index] = value
+            return
         try: # act like it's an index
             self._seq_list[key_or_index] = value
         except TypeError: # not a valid index either
+            print(repr(key_or_index))
+            print(repr(self))
             raise KeyError("%s is not in the SeqList" % str(key_or_index))
         
     def __delitem__(self, key_or_index):
@@ -306,13 +314,14 @@ class SeqList(object):
         
         """
         try: # act like it's a key
-            index = self.seq_list.index(key_or_index)
+            index = self._seq_list.index(key_or_index)
         except ValueError: # oops, look like it wasn't a key
             pass
         else:
             del self._seq_list[index]
+            return
         try: # act like it's an index
-            del self[key_or_index]
+            del self._seq_list[key_or_index]
         except TypeError: # not a valid index either
             raise KeyError("%s is not in the SeqList" % str(key_or_index))
     
@@ -321,7 +330,7 @@ class SeqList(object):
         
         """
         if seq in self:
-            self[seq] = Seq(seq, abund = self[seq] + seq.abund)
+            self[seq] = Seq(seq, abund = self[seq].abund + seq.abund)
         else:
             self._seq_list.append(seq)
         return self
@@ -332,6 +341,11 @@ class SeqList(object):
         """
         for seq in seqlist:
             self.append(seq)
+        return self
+    
+    def extend_with_copy(self, seqlist):
+        for seq in seqlist:
+            self.append(Seq(seq))
         return self
             
     def __iadd__(self, seq_or_list):
@@ -344,11 +358,16 @@ class SeqList(object):
         TODO: write a doc-test
         
         """
-        if seq_or_list.is_seq_object():
-            self.append(seq_or_list)
+        try: # treat it like a Seq object
+            assert seq_or_list.is_seq_object()
+        except AttributeError:
+            pass
         else:
-            for seq in seq_or_list:
-                self.append(seq)
+            self.append(seq_or_list)
+            return self
+        # okay, so it must be a Seq list
+        for seq in seq_or_list:
+            self.append(seq)
         return self
     
     def abund_total(self):
@@ -372,7 +391,7 @@ class SeqList(object):
         """Return a random Seq object from SeqList
         
         """
-        abund_total = self.total_abund()
+        abund_total = self.abund_total()
         index = random.random()
         adjusted_index = index * abund_total
         tally = 0.0
@@ -441,7 +460,7 @@ def parse_file(fasta):
             # The identifier (or name) is found right after the
             # '>'
             identifier = attr_strs[0]
-            curr_attrs['identifier'] = identifier
+            curr_attrs['ident'] = identifier
             attr_index = 1 # just for naming unnamed attributes
             for attr_str in attr_strs[1:]:
                 try:
@@ -452,6 +471,14 @@ def parse_file(fasta):
                     value = attr_str
                     # name it 'attr(01/02/.../10/...)'
                     attr_name = "attr%02d" % attr_index
+                attr_name = attr_name.strip()
+                value = value.strip()
+                try:
+                    # treat value like a float first
+                    value = float(value)
+                except ValueError:
+                    # otherwise it's just gonna stay a string
+                    pass
                 curr_attrs[attr_name] = value
                 attr_index += 1
         else:
