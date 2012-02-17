@@ -115,8 +115,63 @@ def adjusted_abundance1(seq, **kwargs):
     return float(seq) - abund_dist_1_neighbors / 2.0**1
 
 
-class SeqCompMatrix():
+class SeqCompMatrix(object):
     def __init__(self, seq_list):
         self._matrix_dict = {}
+        for seq1 in seq_list:
+            self._matrix_dict[seq1] = {}
+            for seq2 in seq_list:
+                self._matrix_dict[seq1][seq2] = {}
+                
+    def contains(self, seq):
+        return seq in self._matrix_dict
         
-    def 
+    def _set_comp(self, seq1, seq2, key, value):
+        self._matrix_dict[seq1][seq2][key] = value
+        
+    def _get_comp(self, seq1, seq2, key):
+        return self._matrix_dict[seq1][seq2][key]
+    
+    def _del_comp(self, seq1, seq2, key):
+        del self._matrix_dict[seq1][seq2][key]
+        
+    def setc(self, seq1, seq2, key, value):
+        assert self.contains(seq1)
+        assert self.contains(seq2)
+        self._set_comp(seq1, seq2, key, value)
+        
+    def getc(self, seq1, seq2, key):
+        assert self.contains(seq1)
+        assert self.contains(seq2)
+        try:
+            value = self._get_comp(seq1, seq2, key)
+        except KeyError: # try to calculate the comparison from a seq1 method
+            try:
+                value = seq1.__getattr__(key)(seq2)
+            except AttributeError:
+                value = seq2.__getattr__(key)(seq1)
+            self.set(seq1, seq2, key, value)
+            self.set(seq2, seq1, key, value)
+        return self._get_comp(seq1, seq2, key)
+        
+    def delc(self, seq1, seq2, key):
+        assert self.contains(seq1)
+        assert self.contains(seq2)
+        self._del_comp(seq1, seq2, key)
+        
+        
+class DistMatrix(SeqCompMatrix):
+    
+    def get(self, seq1, seq2):
+        return self.getc(seq1, seq2, key = "dist")
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        

@@ -11,7 +11,7 @@ DEFAULT_ABUND = 1.0
 
 ALPHABET = DEFAULT_ALPHABET
 
-class Seq():
+class Seq(object):
     """Sequence and its abundance.
     
     Also defines methods for comparing sequences.
@@ -77,19 +77,6 @@ class Seq():
         
         """
         return str(self) < str(other)
-    
-    def __dist__(self, other):
-        """Return the hamming distance between self and other
-        
-        Attempts to have other provide its own numpy array, but able
-        to produce one if necessary.
-        
-        """
-        try:
-            other_seq_array = other.get_seq_array()
-        except AttributeError:
-            other_seq_array = sp.array(list(other))
-        return hamming(self.get_seq_array(), other_seq_array)
         
     def __str__(self):
         """Return a str of sequence
@@ -139,6 +126,19 @@ class Seq():
         """
         self.abund = float(value)
         
+    def dist(self, other):
+        """Return the hamming distance between self and other
+        
+        Attempts to have other provide its own numpy array, but able
+        to produce one if necessary.
+        
+        """
+        try:
+            other_seq_array = other.get_seq_array()
+        except AttributeError:
+            other_seq_array = sp.array(list(other))
+        return hamming(self.get_seq_array(), other_seq_array)
+        
     def is_seq_object(self):
         """Allows external functions to make sure a seq is a Seq object
         
@@ -146,7 +146,7 @@ class Seq():
         return True
 
 
-class SeqList():
+class SeqList(object):
     """List of Seq objects.
     
     Also defines methods for analyzing the sequence sample
@@ -261,6 +261,7 @@ class SeqList():
         SeqList['AAAA'] <==> SeqList[index_of_AAAA]
         
         Evaluates the key_or_index first as a key
+        TODO: account for negative indices
         
         """
         
@@ -283,6 +284,8 @@ class SeqList():
         
         If the key provided is different from str(value) the index now
         points to value, but with a new key (i.e. str(value)).
+        TODO: account for negative indices
+
         
         """
         try: # act like it's a key
@@ -298,6 +301,8 @@ class SeqList():
         
     def __delitem__(self, key_or_index):
         """Delete the item with provided index or sequence
+        
+        TODO: account for negative indices
         
         """
         try: # act like it's a key
