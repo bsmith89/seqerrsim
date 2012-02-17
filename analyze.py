@@ -113,5 +113,10 @@ def adjusted_abundance1(seq, **kwargs):
     dist_matrix = kwargs['dist_matrix']
     abund_dist_1_neighbors = get_abund_dist_x_neighbors_for(seq, seq_list, dist_matrix, dist = 1)
     return float(seq) - abund_dist_1_neighbors / 2.0**1
-               
-    
+
+
+class SeqCompMatrix():
+    def __init__(self, seq_list):
+        self._matrix_dict = {}
+        
+    def 
