@@ -423,4 +423,40 @@ def parse_file(fasta):
     """Takes a open file object and returns a SeqList object.
     
     """
-    pass
+    out_list = SeqList()
+    curr_seq = ""
+    curr_attrs = {}
+    for line in fasta:
+        if line.startswith(';'): # ignore comment lines
+            continue
+        elif line.startswith(">"): # is it a title line?
+            if curr_seq is not "": # unless this is the first Seq
+                # add the previously stored information as a Seq object
+                out_list.append(Seq(curr_seq, **curr_attrs))
+                # and reset the curr_ values
+                curr_seq = ""
+                curr_attrs = {}
+            # collect new information
+            attr_strs = line[1:].split('|') # everything's split by '|'
+            # The identifier (or name) is found right after the
+            # '>'
+            identifier = attr_strs[0]
+            curr_attrs['identifier'] = identifier
+            attr_index = 1 # just for naming unnamed attributes
+            for attr_str in attr_strs[1:]:
+                try:
+                    # assume that attributes are named, and connected
+                    # by a '='
+                    attr_name, value = attr_str.split('=')
+                except ValueError: # but if not...
+                    value = attr_str
+                    # name it 'attr(01/02/.../10/...)'
+                    attr_name = "attr%02d" % attr_index
+                curr_attrs[attr_name] = value
+                attr_index += 1
+        else:
+            curr_seq += line.strip()
+    if curr_seq is not "":
+        out_list.append(Seq(curr_seq, **curr_attrs))
+    return out_list
+                    

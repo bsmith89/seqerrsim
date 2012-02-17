@@ -2,7 +2,7 @@
 
 """
 import random
-from data import Seq, SeqList, ALPHABET, parse_file
+from data import Seq, SeqList, ALPHABET
 
 def sample(seqs, n):
     sample = SeqList()
@@ -17,7 +17,7 @@ def sample_with_errors(seq_list, n, error_rate, alph = None):
     for i in range(n):
         pick = seq_list.random_seq()
         pick_str_with_errors = with_errors(str(pick), error_rate, alph)
-        sample += Seq(pick_str_with_errors, 1.0)
+        sample += Seq(pick_str_with_errors, abund = 1.0)
     return sample
         
             
