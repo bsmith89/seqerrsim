@@ -303,8 +303,6 @@ class SeqList(object):
         try: # act like it's an index
             self._seq_list[key_or_index] = value
         except TypeError: # not a valid index either
-            print(repr(key_or_index))
-            print(repr(self))
             raise KeyError("%s is not in the SeqList" % str(key_or_index))
         
     def __delitem__(self, key_or_index):
@@ -400,7 +398,7 @@ class SeqList(object):
             if tally > adjusted_index:
                 return Seq(str(seq), abund = 1)
     
-    def sort_by(self, reverse = [False], *attrs):
+    def sort_by(self, *attrs, **kwargs):
         """Sorts the SeqList by the arguments in *args.
         
         Forward or reverse is listed in reverse as booleans
@@ -409,6 +407,12 @@ class SeqList(object):
         TODO: implement
         
         """
+        try:
+            reverse = kwargs['reverse']
+        except KeyError:
+            reverse = None
+        if reverse is None:
+            reverse = [False]*len(attrs)
         for attr, if_reverse in reversed(zip(attrs, reverse)):
             self._sort_by_one_attr(attr, reverse = if_reverse)
     
@@ -418,8 +422,8 @@ class SeqList(object):
         """
         sorted_zip = sorted(self._attr_zip(attr), reverse = reverse)
         new_seq_list = []
-        for item in sorted_zip:
-            new_seq_list.append(item[-1])
+        for pair in sorted_zip:
+            new_seq_list.append(pair[-1])
         self._seq_list = new_seq_list
             
     def _attr_zip(self, attr):
@@ -428,7 +432,11 @@ class SeqList(object):
         """
         attr_zip = []
         for seq in self:
-            attr_zip.append((seq.__getattr__[attr], seq))
+            if attr == 'sequence':
+                value = str(seq)
+            else:
+                value = seq.__getattribute__(attr)
+            attr_zip.append((value, seq))
         return attr_zip
         
     
