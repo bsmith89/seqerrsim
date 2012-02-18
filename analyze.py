@@ -38,10 +38,10 @@ class SeqCompMatrix(object):
         except KeyError:
             # try to calculate the comparison from a seq1 method
             try:
-                value = seq1.__getattr__(key)(seq2)
+                value = seq1.__getattribute__(key)(seq2)
             except AttributeError: 
                 # but if that fails try a seq2 method instead
-                value = seq2.__getattr__(key)(seq1)
+                value = seq2.__getattribute__(key)(seq1)
             self._set_comp(seq1, seq2, key, value)
             self._set_comp(seq2, seq1, key, value)
         return self._get_comp(seq1, seq2, key)
@@ -51,20 +51,16 @@ class SeqCompMatrix(object):
         assert self.contains(seq2)
         self._del_comp(seq1, seq2, key)
         
-    def seq_comp_array(self, seq1, key = None):
+    def seq_comp_array(self, seq1, key):
         """
         
         TODO: Make this less of a bottleneck
         
         """
-        single_seq_dict = self._matrix_dict[seq1]
-        if key is None:
-            return single_seq_dict
-        else:
-            out_dict = {}
-            for seq2 in single_seq_dict:
-                out_dict[seq2] = single_seq_dict[seq2][key]
-            return out_dict
+        out_dict = {}
+        for seq2 in self._matrix_dict[seq1]:
+            out_dict[seq2] = self.getc(seq1, seq2, key)
+        return out_dict
     
     def seqs_for_which_true(self, seq1, key, test, **testargs):
         out_list = []
@@ -84,7 +80,7 @@ class DistMatrix(SeqCompMatrix):
 def calc_all(index_function, **kwargs):
     seq_list = kwargs['seq_list']
     for seq in seq_list:
-        seq.set_attr(index_function.__name__, index_function(seq, **kwargs))
+        seq.__setattr__(index_function.__name__, index_function(seq, **kwargs))
         
 def binomial_corrected_abundance(seq, **kwargs):
     working_abund = seq.abund
@@ -96,6 +92,7 @@ def binomial_corrected_abundance(seq, **kwargs):
         a = other_seq.abund
         d = dist_array[other_seq]
         working_abund -= a * ((e / 3) ** d) * ((1 - e) ** (l - d))
+    return working_abund
 
 
         
