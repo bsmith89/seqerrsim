@@ -62,7 +62,7 @@ class SeqCompMatrix(object):
             out_dict[seq2] = self.getc(seq1, seq2, key)
         return out_dict
     
-    def seqs_for_which_true(self, seq1, key, test, **testargs):
+    def seqs_for_which(self, seq1, key, test, **testargs):
         out_list = []
         seq_comp_array = self.seq_comp_array(seq1, key = key)
         for seq2 in seq_comp_array:
@@ -93,11 +93,6 @@ def binomial_corrected_abundance(seq, **kwargs):
         d = dist_array[other_seq]
         working_abund -= a * ((e / 3) ** d) * ((1 - e) ** (l - d))
     return working_abund
-
-
-        
-        
-        
         
         
         
