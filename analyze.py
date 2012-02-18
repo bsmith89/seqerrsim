@@ -1,11 +1,22 @@
 """TODO: docstring
 
+
 """
 from scipy import mat, zeros, arange, array
+from scipy.misc import comb
 from data import SeqList
 
 
 class SeqCompMatrix(object):
+    """
+    
+    TODO: make keys *strings* not Seq objects
+    TODO: the data structure should be a set of numpy matrices
+    (or arrays), one for each attr, and a list of sequences to act
+    as keys. Tertiary dictionaries are too memory intensive I think.
+    (>1gb for 1500x1500 dict_mat)
+    
+    """
     def __init__(self, seq_list):
         self._matrix_dict = {}
         for seq1 in seq_list:
@@ -54,7 +65,7 @@ class SeqCompMatrix(object):
     def seq_comp_array(self, seq1, key):
         """
         
-        TODO: Make this less of a bottleneck
+        TODO: Make this less of a bottleneck (is it?)
         
         """
         out_dict = {}
@@ -71,16 +82,11 @@ class SeqCompMatrix(object):
         return out_list
         
         
-class DistMatrix(SeqCompMatrix):
-    
-    def get(self, seq1, seq2):
-        return self.getc(seq1, seq2, key = "dist")
-        
-        
 def calc_all(index_function, **kwargs):
     seq_list = kwargs['seq_list']
     for seq in seq_list:
-        seq.__setattr__(index_function.__name__, index_function(seq, **kwargs))
+        seq.__setattr__(index_function.__name__, index_function(seq, 
+                                                                **kwargs))
         
 def binomial_corrected_abundance(seq, **kwargs):
     working_abund = seq.abund
@@ -90,8 +96,9 @@ def binomial_corrected_abundance(seq, **kwargs):
     dist_array = dist_mat.seq_comp_array(seq, key = 'dist')
     for other_seq in dist_array:
         a = other_seq.abund
-        d = dist_array[other_seq]
-        working_abund -= a * ((e / 3) ** d) * ((1 - e) ** (l - d))
+        d = dist_array[other_seq] * l
+        working_abund -= a * (1 / comb(l, d)) * ((e / 3.0) ** d) * \
+                             ((1.0 - e) ** (l - d))
     return working_abund
         
         
