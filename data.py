@@ -1,4 +1,4 @@
-"""Package which defines the Seq, Seqs classes as well as sequence I/O
+"""Data structures and functions for retrieving/storing sequence data
 
 """
 import random
@@ -331,7 +331,6 @@ class SeqList(object):
             self[seq] = Seq(seq, abund = self[seq].abund + seq.abund)
         else:
             self._seq_list.append(seq)
-        return self
         
     def extend(self, seqlist):
         """Add a list of Seq objects to SeqList.
@@ -339,12 +338,6 @@ class SeqList(object):
         """
         for seq in seqlist:
             self.append(seq)
-        return self
-    
-    def extend_with_copy(self, seqlist):
-        for seq in seqlist:
-            self.append(Seq(seq))
-        return self
             
     def __iadd__(self, seq_or_list):
         """Append the Seq object(s) to the SeqList.
@@ -413,6 +406,10 @@ class SeqList(object):
             reverse = None
         if reverse is None:
             reverse = [False]*len(attrs)
+        elif reverse == True:
+            reverse = [True]*len(attrs)
+        elif reverse == False:
+            reverse = [False]*len(attrs)
         for attr, if_reverse in reversed(zip(attrs, reverse)):
             self._sort_by_one_attr(attr, reverse = if_reverse)
     
@@ -420,6 +417,9 @@ class SeqList(object):
         """Hidden method for a single attribute sort    
         
         """
+        if reverse is not True or False:
+            raise ValueError('Reverse must be a boolean, not "%s"' %
+                             str(reverse))
         sorted_zip = sorted(self._attr_zip(attr), reverse = reverse)
         new_seq_list = []
         for pair in sorted_zip:
