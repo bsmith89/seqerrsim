@@ -1,5 +1,7 @@
 """Data structures and functions for retrieving/storing sequence data
 
+TODO: Unit-tests (doc-tests?)
+
 """
 import random
 import scipy as sp
